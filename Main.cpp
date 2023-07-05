@@ -1,5 +1,5 @@
 /*
-Òì³££º±à¼­Æ÷=¡·¸ß¼¶=¡·Êı¾İÖ´ĞĞ±£»¤=¡··ñ
+å¼‚å¸¸ï¼šç¼–è¾‘å™¨=ã€‹é«˜çº§=ã€‹æ•°æ®æ‰§è¡Œä¿æŠ¤=ã€‹å¦
 */
 #include <windows.h>
 #include <iostream>
@@ -9,15 +9,23 @@ void _declspec(naked) ShellCode()
 	__asm
 	{
 		/*
-		½«×Ö·û´®×ª³Éascii
-		LoadLibraryA    0C 91 74 32
-		GetProcAddress  BB AF DF 85
+		å°†å­—ç¬¦ä¸²è½¬æˆascii
+		LoadLibraryA    0C 91 74 32 
+		ExitProcess     0x4FD18963
 		user32.dll      75 73 65 72  33 32 2E 64  6C 6C 00
 		MessageBoxA     1E 38 0A 6A
 		I Love You      49 20 4C 6F  76 65 20 59  6F 75 00
+		kernel32.dll    6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 00
 		*/
 		pushad
 		sub esp, 0x30
+
+		// user32.dll      75 73 65 72  33 32 2E 64  6C 6C 00
+		mov byte ptr ds : [esp - 1] , 0x0
+		sub esp, 0x1
+		push 0x6C6C642E
+		push 0x32336C65
+		push 0x6E72656B
 
 		// I Love You 49 20 4C 6F  76 65 20 59  6F 75 00
 		mov byte ptr ds : [esp - 1] , 0x0
@@ -38,30 +46,30 @@ void _declspec(naked) ShellCode()
 		push 0x642E3233
 		push 0x72657375
 
-		// GetProAddress
-		// push 0xbbafdf85   ²»ĞèÒª
+		// ExitProcess
+		push 0x4FD18963
 
 		// LoadLibraryA 0C 91 74 32
 		push 0x0C917432
 
 		mov ecx, esp
-		push ecx            // ×Ö·û´®Ê×µØÖ·
+		push ecx            // å­—ç¬¦ä¸²é¦–åœ°å€
 		call fun_Payload
 
 		popad
 		retn
 
-		// 2. »ñÈ¡Ä£¿é»ùÖ·
+		// 2. è·å–æ¨¡å—åŸºå€
 		fun_GetModule :
 			push ebp
 			mov ebp, esp
 			sub esp, 0xC
 			push esi
 
-			mov esi, dword ptr fs : [0x30]  // PEBÖ¸Õë
-			mov esi, [esi + 0xC]            // LDR»ú¹¹ÌáµØÖ·
+			mov esi, dword ptr fs : [0x30]  // PEBæŒ‡é’ˆ
+			mov esi, [esi + 0xC]            // LDRæœºæ„æåœ°å€
 			mov esi, [esi + 0x1C]           // list
-			mov esi, [esi]                  // listµÄµÚ¶şÏî kernel32
+			mov esi, [esi]                  // listçš„ç¬¬äºŒé¡¹ kernel32
 			mov esi, [esi + 0x8]            // kernel32.dll base
 			mov eax, esi
 
@@ -71,9 +79,9 @@ void _declspec(naked) ShellCode()
 			retn
 
 			/*
-			»ñÈ¡½ø³ÌµØÖ·
-			@param dllBase   Ä£¿é»ùÖ·
-			@param funName   º¯ÊıÃû
+			è·å–è¿›ç¨‹åœ°å€
+			@param dllBase   æ¨¡å—åŸºå€
+			@param funName   å‡½æ•°å
 			*/
 		fun_GetProcAddress:
 			push ebp
@@ -88,55 +96,55 @@ void _declspec(naked) ShellCode()
 			mov edx, [ebp + 0x8]   // dllBase
 			mov esi, [edx + 0x3C]  // lf_anew
 			lea esi, [edx + esi]   // NT header
-			mov esi, [esi + 0x78]  // µ¼³ö±íRVA
-			lea esi, [edx + esi]   // µ¼³ö±íVA
+			mov esi, [esi + 0x78]  // å¯¼å‡ºè¡¨RVA
+			lea esi, [edx + esi]   // å¯¼å‡ºè¡¨VA
 
 			mov edi, [esi + 0x1C]  // EAT RVA
 			lea edi, [edx + edi]   // EAT VA
-			mov[ebp - 0x4], edi    // EAT VA ·ÅÈë¾Ö²¿±äÁ¿ÖĞ
+			mov[ebp - 0x4], edi    // EAT VA æ”¾å…¥å±€éƒ¨å˜é‡ä¸­
 
 			mov edi, [esi + 0x20]  // ENT RVA
 			lea edi, [edx + edi]   // ENT VA
-			mov[ebp - 0x8], edi    // ENT VA ·ÅÈë¾Ö²¿±äÁ¿ÖĞ
+			mov[ebp - 0x8], edi    // ENT VA æ”¾å…¥å±€éƒ¨å˜é‡ä¸­
 
 			mov edi, [esi + 0x24]  // EOT RVA
 			lea edi, [edx + edi]   // EOT VA
-			mov[ebp - 0xC], edi    // EOT VA ·ÅÈë¾Ö²¿±äÁ¿ÖĞ
+			mov[ebp - 0xC], edi    // EOT VA æ”¾å…¥å±€éƒ¨å˜é‡ä¸­
 
-			// ±È½Ï×Ö·û´® »ñÈ¡API
-			xor ebx, ebx           // EAXÇåÁã£¬EAX×÷ÎªË÷Òı
+			// æ¯”è¾ƒå­—ç¬¦ä¸² è·å–API
+			xor ebx, ebx           // EAXæ¸…é›¶ï¼ŒEAXä½œä¸ºç´¢å¼•
 			cld
-			jmp tag_cmpFirst       // µÚÒ»´ÎÖ´ĞĞeaxÖ»ÄÜÎª0
-			tag_cmpLoop :
-		inc ebx
-			tag_cmpFirst :
-		mov esi, [ebp - 0x8]     // È¡³öENT
+			jmp tag_cmpFirst       // ç¬¬ä¸€æ¬¡æ‰§è¡Œeaxåªèƒ½ä¸º0
+		tag_cmpLoop :
+			inc ebx
+		tag_cmpFirst :
+			mov esi, [ebp - 0x8]     // å–å‡ºENT
 			mov esi, [esi + ebx * 4] // RVA
 			mov edx, [ebp + 0x8]     // dllBase
-			lea esi, [edx + esi]     // º¯ÊıÃû³Æ×Ö·û´®
-			mov edi, [ebp + 0xC]     // È¡funName´«²Î£¬Òª²éÕÒµÄº¯ÊıÃû
+			lea esi, [edx + esi]     // å‡½æ•°åç§°å­—ç¬¦ä¸²
+			mov edi, [ebp + 0xC]     // å–funNameä¼ å‚ï¼Œè¦æŸ¥æ‰¾çš„å‡½æ•°å
 			mov edi, [edi]
 
-			// ¶Ôº¯ÊıÃû½øĞĞ¼ÓÃÜ
+			// å¯¹å‡½æ•°åè¿›è¡ŒåŠ å¯†
 			push esi
 			call fun_GetHashCode
 			//push eax
 			//mov esi, esp
 			//pop eax
 
-			// Ñ­»·Ç°£¬±êÖ¾Î»ÒªÇåÁã
-			cmp edi, eax              // ediºÍeaxÖĞµÄÖµ½øĞĞ±È½Ï
-			//repe cmpsb              // ediºÍeaxÖĞµÄµØÖ·µÄÖµ½øĞĞ±È½Ï
-			jne tag_cmpLoop           // ²»ÏàµÈÌøµ½Ñ­»·¿ªÊ¼´¦
+			// å¾ªç¯å‰ï¼Œæ ‡å¿—ä½è¦æ¸…é›¶
+			cmp edi, eax              // ediå’Œeaxä¸­çš„å€¼è¿›è¡Œæ¯”è¾ƒ
+			//repe cmpsb              // ediå’Œeaxä¸­çš„åœ°å€çš„å€¼è¿›è¡Œæ¯”è¾ƒ
+			jne tag_cmpLoop           // ä¸ç›¸ç­‰è·³åˆ°å¾ªç¯å¼€å§‹å¤„
 
-			// ÕÒµ½º¯ÊıÃû
+			// æ‰¾åˆ°å‡½æ•°å
 			mov esi, [ebp - 0xC]     // EOT
-			xor edi, edi             // ÎªÁË²»Ó°Ïì½á¹ûÇå¿Õedi
-			mov di, [esi + ebx * 2]  // ÕÒµ½EAT±íË÷Òı eotÊÇwordÀàĞÍ£¬ËùÒÔ³ËÒÔ2
-			mov esi, [ebp - 0x4]     // È¡³öEATµØÖ·
-			mov esi, [esi + edi * 4] // º¯ÊıµØÖ·RVA
-			mov edx, [ebp + 0x8]     // È¡³ödllBase
-			lea eax, [edx + esi]     // º¯ÊıµØÖ·
+			xor edi, edi             // ä¸ºäº†ä¸å½±å“ç»“æœæ¸…ç©ºedi
+			mov di, [esi + ebx * 2]  // æ‰¾åˆ°EATè¡¨ç´¢å¼• eotæ˜¯wordç±»å‹ï¼Œæ‰€ä»¥ä¹˜ä»¥2
+			mov esi, [ebp - 0x4]     // å–å‡ºEATåœ°å€
+			mov esi, [esi + edi * 4] // å‡½æ•°åœ°å€RVA
+			mov edx, [ebp + 0x8]     // å–å‡ºdllBase
+			lea eax, [edx + esi]     // å‡½æ•°åœ°å€
 
 			pop ecx
 			pop ebx
@@ -148,8 +156,8 @@ void _declspec(naked) ShellCode()
 			retn 0xC
 
 			/*
-			½ÓÊÕÒ»¸ö²ÎÊı
-			@param ×Ö·û´®Ê×µØÖ·
+			æ¥æ”¶ä¸€ä¸ªå‚æ•°
+			@param å­—ç¬¦ä¸²é¦–åœ°å€
 			*/
 		fun_Payload:
 			push ebp
@@ -161,44 +169,60 @@ void _declspec(naked) ShellCode()
 			push ebx
 			push ecx
 
-			// 1. ÏÈÄÃµ½dllBase
+			// 1. å…ˆæ‹¿åˆ°dllBase
 			call fun_GetModule
-			mov[ebp - 0x4], eax           // dllBase´æµ½ebp-4ÖĞ
+			mov [ebp - 0x4], eax           // dllBaseå­˜åˆ°ebp-4ä¸­
 
-			// 2. »ñÈ¡LoadLibraryA
-			lea ecx, [ebp + 0xC]          // »ñÈ¡×Ö·û´®Ê×µØÖ·
-			push ecx                      // Òª²éÕÒµÄº¯ÊıÃû
+			// 2. è·å–LoadLibraryA
+			lea ecx, [ebp + 0xC]          // è·å–å­—ç¬¦ä¸²é¦–åœ°å€
+			push ecx                      // è¦æŸ¥æ‰¾çš„å‡½æ•°å
 			push eax                      // dllbBase
 			call fun_GetProcAddress
-			mov[ebp - 0x8], eax          // LoadLibraryµØÖ·
+			mov [ebp - 0x8], eax          // LoadLibraryåœ°å€
 
-			// 3. »ñÈ¡GetProcAddress    ÔÚµ÷ÊÔ¹ı³ÌÖĞ£¬·¢ÏÖ²»ĞèÒªÕâ¸ö£¬ÓÃ×Ô¼ºĞ´µÄfun_GetProcAddress
+			// 3. è·å–GetProcAddress    åœ¨è°ƒè¯•è¿‡ç¨‹ä¸­ï¼Œå‘ç°ä¸éœ€è¦è¿™ä¸ªï¼Œç”¨è‡ªå·±å†™çš„fun_GetProcAddress
 			//lea ecx, [ebp + 0xC + 0x4]
 			//push ecx
 			//push [ebp - 0x4]
 			//call fun_GetProcAddress
-			//mov [ebp - 0xC], eax           // ´æ·ÅGetProcAdressµØÖ·
+			//mov [ebp - 0xC], eax           // å­˜æ”¾GetProcAdressåœ°å€
 
-			// 4. µ÷ÓÃLoadLibraryA ¼ÓÔØuser32.dll
-			lea ecx, [ebp + 0xC + 0x4]          // user32.dll×Ö·û´®µØÖ·
+			// 3. è°ƒç”¨LoadLibraryAè·å–kernel32.dllçš„åŸºå€
+			lea ecx, [ebp + 0xC + 0x8 + 0xB + 0x4 + 0xD]
 			push ecx
-			call[ebp - 0x8]                // µ÷ÓÃ LoadLibraryA »ñÈ¡user32.dll
-			mov[ebp - 0x10], eax          // ·µ»Ø½á¹û(user32 base)´æ·Åµ½ebp - 0x10
+			call [ebp - 0x8]
+			mov [ebp - 0xC], eax
 
-			// 5. µ÷ÓÃGetProcaddress£¬»ñÈ¡MessageBoxAµØÖ·
-			lea ecx, [ebp + 0xC + 0x4 + 0xB]         // MessageBoxA×Ö·û´®µØÖ·
+			// 4. è°ƒç”¨LoadLibraryA åŠ è½½user32.dll
+			lea ecx, [ebp + 0xC + 0x8]          // user32.dllå­—ç¬¦ä¸²åœ°å€
 			push ecx
-			push[ebp - 0x10]
+			call[ebp - 0x8]                // è°ƒç”¨ LoadLibraryA è·å–user32.dll
+			mov [ebp - 0x10], eax          // è¿”å›ç»“æœ(user32 base)å­˜æ”¾åˆ°ebp - 0x10
+
+			// 5. è°ƒç”¨GetProcaddressï¼Œè·å–MessageBoxAåœ°å€
+			lea ecx, [ebp + 0xC + 0x8 + 0xB]         // MessageBoxAå­—ç¬¦ä¸²åœ°å€
+			push ecx
+			push [ebp - 0x10]
 			call fun_GetProcAddress
-			mov[ebp - 0x14], eax          // ·µ»Ø½á¹û(MessageBoxAµÄµØÖ·)·Åµ½ebp - 0x14
+			mov [ebp - 0x14], eax          // è¿”å›ç»“æœ(MessageBoxAçš„åœ°å€)æ”¾åˆ°ebp - 0x14
 
-			// 6. Êä³ö I Love You
+			// 6. è¾“å‡º I Love You
 			push 0
 			push 0
-			lea ecx, [ebp + 0xC + 0x4 + 0xB + 0x4]
+			lea ecx, [ebp + 0xC + 0x8 + 0xB + 0x4]
 			push ecx
 			push 0
-			call[ebp - 0x14]
+			call [ebp - 0x14]
+
+			// è·å–ExitProcessçš„åœ°å€
+			lea ecx, [ebp + 0xC + 0x4]
+			push ecx
+			push [ebp - 0xC]
+			call fun_GetProcAddress
+
+			// è°ƒç”¨ExitProcessé€€å‡ºç¨‹åº
+			push 0 
+			call eax
 
 			pop ecx
 			pop ebx
@@ -208,11 +232,11 @@ void _declspec(naked) ShellCode()
 			mov esp, ebp
 			pop ebp
 			retn 0x4
-
-			/*
-			»ñÈ¡hashcodeÖµ
-			@para Òª±àÂëµÄ×Ö·û´®
-			*/
+		
+		/*
+		è·å–hashcodeå€¼
+		@para è¦ç¼–ç çš„å­—ç¬¦ä¸²
+		*/
 		fun_GetHashCode:
 			push ebp
 			mov ebp, esp
@@ -223,25 +247,25 @@ void _declspec(naked) ShellCode()
 
 			mov dword ptr[ebp - 0x4], 0  // DWORD digest = 0
 
-			mov esi, [ebp + 0x8]          // È¡²ÎÊıstrName
+			mov esi, [ebp + 0x8]          // å–å‚æ•°strName
 			xor ecx, ecx
 
-			tag_hash_loop :
-		mov ebx, [ebp - 0x4]
+		tag_hash_loop :
+			mov ebx, [ebp - 0x4]
 			shl ebx, 0x19				  // digest << 25
 			mov edx, [ebp - 0x4]
 			shr edx, 0x7                  // digest >> 7
 			or ebx, edx					  // |
 			xor eax, eax
-			mov al, byte ptr[esi + ecx]           // strNameÊÇÒ»¸ö×Ö½Ú£¬ËùÒÔÒª·ÅÔÚalÖĞ
-			test al, al                   // alÊÇ·ñÎ´0
+			mov al, byte ptr [esi + ecx]           // strNameæ˜¯ä¸€ä¸ªå­—èŠ‚ï¼Œæ‰€ä»¥è¦æ”¾åœ¨alä¸­
+			test al, al                   // alæ˜¯å¦æœª0
 			jz tag_hash_loop_end
 			add ebx, eax				  // digest + *strName
-			mov[ebp - 0x4], ebx           // ±£´æ½á¹û
+			mov[ebp - 0x4], ebx           // ä¿å­˜ç»“æœ
 			inc ecx                       // strName++
 			jmp tag_hash_loop
-			tag_hash_loop_end :
-		mov eax, [ebp - 0x4]
+		tag_hash_loop_end :
+			mov eax, [ebp - 0x4]
 
 			pop ebx
 			pop edx
